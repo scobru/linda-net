@@ -54,4 +54,6 @@ npm test
 Tests publish `example/` (public and private) on one node and read it over HTTP through another, and run the
 tunnel over in-memory streams. Real holepunching is not covered: try `publish` and `serve` on two machines.
 
+Design, link formats and threat model: [docs/design.md](docs/design.md).
+
 License: ISC.
