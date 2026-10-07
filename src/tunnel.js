@@ -21,7 +21,10 @@ export function listenTunnel (open, { port = 0 } = {}) {
 }
 
 export const toTunnelLink = (publicKey) => `linda-tunnel://${z32.encode(publicKey)}`
-export const parseTunnelLink = (link) => z32.decode(link.replace(/^linda-tunnel:\/\//, ''))
+export function parseTunnelLink (link) {
+  if (!link.startsWith('linda-tunnel://')) throw new Error(`not a tunnel link (expected linda-tunnel://..., from \`linda-net expose\`): ${link}`)
+  return z32.decode(link.slice('linda-tunnel://'.length))
+}
 
 // One stable identity per (storage, name): the link survives restarts.
 async function keyPairFor (storage, name) {
