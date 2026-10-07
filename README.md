@@ -31,6 +31,43 @@ The two links are not interchangeable: `connect` rejects a `linda://` link and `
 
 Two processes cannot share one storage dir (`~/.linda-net` by default). Running `publish` and `serve` on the same machine needs `--storage <other dir>` on one of them.
 
+## Quick start (same machine)
+
+Every command stores its data in `--storage` (default `~/.linda-net`), and **only one process can use a storage at a time**. So use one storage per terminal, and pass the same `--storage` to the commands that must share data:
+
+```
+# terminal 1: publish and keep seeding
+linda-net publish ./mysite --name mysite
+#   -> linda://<key>
+
+# terminal 2: read it (its own storage)
+linda-net serve --storage ~/linda-serve
+# open http://<key>.localhost:7777/
+```
+
+Private site, with a short name (note the quotes: `#` starts a comment in some shells, and `add` must use the same `--storage` as `serve`):
+
+```
+linda-net publish ./notes --private --name notes
+#   -> linda://<key>#<decryption key>
+linda-net add "linda://<key>#<decryption key>" --name notes --storage ~/linda-serve
+linda-net serve --storage ~/linda-serve
+# open http://notes.localhost:7777/
+```
+
+## Troubleshooting
+
+| You see | Why | Fix |
+|---|---|---|
+| `gateway error` / `storage is in use by another linda-net process` | two processes share one storage | give one of them `--storage <other dir>` |
+| `unknown site: use a key or a name added with linda-net add` | the name was saved in a different storage than `serve` uses | run `add` with the same `--storage` as `serve` |
+| `no peer is hosting this site right now` | nobody is seeding it | keep `publish` running (or `pin` it elsewhere) |
+| `site "default" is already public and can't become private` | `--private` without `--name` reuses the name `default` | pick a new `--name` |
+| `not a tunnel link` | `connect` got a `linda://` site link | tunnels come from `expose` and start with `linda-tunnel://` |
+| `Invalid character in base32 input` | the link is mistyped or truncated | copy the whole link, in quotes |
+
+The site stays online only while a peer seeds it: keep the `publish` terminal open. A private link includes its decryption key: treat it like a password.
+
 ## How it works
 
 - `publish` mirrors a folder into a single-writer Hyperdrive. The site's address is the drive's
