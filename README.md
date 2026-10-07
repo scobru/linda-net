@@ -31,7 +31,27 @@ The two links are not interchangeable: `connect` rejects a `linda://` link and `
 
 Two processes cannot share one storage dir (`~/.linda-net` by default). Running `publish` and `serve` on the same machine needs `--storage <other dir>` on one of them.
 
-## Quick start (same machine)
+## Quick start (two machines)
+
+The usual case. No `--storage` tricks needed: each machine has its own `~/.linda-net`.
+
+```
+# machine A: publish and keep the terminal open
+linda-net publish ./mysite --name mysite
+#   -> linda://<key>   (send this link to the reader)
+
+# machine B: install linda-net, then
+linda-net serve
+# open http://<key>.localhost:7777/
+```
+
+The gateway listens on `localhost` only, so every reader runs `serve` on their own machine: you share the `linda://` link, not a web address. Machine B finds machine A through the DHT.
+
+For a private site machine B runs `linda-net add "linda://<key>#<decryption key>" --name notes`, then `serve`, and opens `http://notes.localhost:7777/`.
+
+The site opens only while some machine hosts it. If A is off, B sees `no peer is hosting this site right now`, unless a third machine keeps it with `linda-net pin <link>`.
+
+## Quick start (same machine, for testing)
 
 Every command stores its data in `--storage` (default `~/.linda-net`), and **only one process can use a storage at a time**. So use one storage per terminal, and pass the same `--storage` to the commands that must share data:
 
