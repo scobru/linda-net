@@ -18,6 +18,19 @@ linda-net expose 3000            # share a local TCP port -> linda-tunnel://<key
 linda-net connect linda-tunnel://<key> --port 3000   # on the other machine
 ```
 
+## Two things, two link types
+
+| | `publish` / `serve` | `expose` / `connect` |
+|---|---|---|
+| Shares | a **folder** of static files (copied into a Hyperdrive) | a **live TCP port** on your machine (nothing is copied) |
+| Link | `linda://<key>` | `linda-tunnel://<key>` |
+| Reader uses | `serve`, then `http://<key>.localhost:7777/` in a browser | `connect <link> --port N`, then any client on `localhost:N` |
+| Works when | any peer hosts it, author may be offline | the machine running `expose` is online |
+
+The two links are not interchangeable: `connect` rejects a `linda://` link and `serve` does not open a `linda-tunnel://` one.
+
+Two processes cannot share one storage dir (`~/.linda-net` by default). Running `publish` and `serve` on the same machine needs `--storage <other dir>` on one of them.
+
 ## How it works
 
 - `publish` mirrors a folder into a single-writer Hyperdrive. The site's address is the drive's
