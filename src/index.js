@@ -156,6 +156,8 @@ export function createGateway (node, { port = DEFAULT_PORT, timeoutMs = 15000 } 
       stream.on('error', () => res.destroy())
       stream.pipe(res)
     } catch (err) {
+      console.error(err)
+      if (err.message?.includes('could not be locked')) return send(500, 'storage is in use by another linda-net process: run serve with --storage <other dir>')
       if (!res.headersSent) send(500, 'gateway error')
       else res.destroy()
     }
