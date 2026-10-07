@@ -6,6 +6,8 @@ import http from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
+import crypto from 'node:crypto'
+import { loadSites, saveSite, resolveSite } from './sites.js'
 
 export const DEFAULT_STORAGE = path.join(os.homedir(), '.linda-net')
 export const DEFAULT_PORT = 7777
@@ -17,13 +19,15 @@ const MIME = {
   woff2: 'font/woff2', woff: 'font/woff', mp3: 'audio/mpeg', mp4: 'video/mp4', webm: 'video/webm', wasm: 'application/wasm'
 }
 
-export const toLink = (key) => `linda://${z32.encode(key)}`
+/** Private sites carry their encryption key in the fragment: `linda://<key>#<enc>`. */
+export const toLink = (key, enc) => `linda://${z32.encode(key)}${enc ? '#' + z32.encode(enc) : ''}`
 
-/** Accepts `linda://<z32>` or the bare z32 key. */
+/** Accepts `linda://<z32>[#<enc>]` or the bare z32 key. */
 export function parseLink (link) {
-  const key = z32.decode(link.replace(/^linda:\/\//, '').replace(/\/.*$/, ''))
+  const [id, enc] = link.replace(/^linda:\/\//, '').replace(/\/.*?(#|$)/, '$1').split('#')
+  const key = z32.decode(id)
   if (key.length !== 32) throw new Error(`not a linda-net link: ${link}`)
-  return key
+  return enc ? { key, encryptionKey: z32.decode(enc) } : { key }
 }
 
 /**
@@ -36,10 +40,10 @@ export async function createNode ({ storage = DEFAULT_STORAGE, bootstrap } = {})
   swarm.on('connection', (socket) => store.replicate(socket))
   const drives = new Map()
 
-  async function open (key, { name } = {}) {
+  async function open (key, { name, encryptionKey } = {}) {
     const id = key ? z32.encode(key) : `name:${name}`
     if (drives.has(id)) return drives.get(id)
-    const drive = key ? new Hyperdrive(store, key) : new Hyperdrive(store.namespace(name))
+    const drive = key ? new Hyperdrive(store, key, { encryptionKey }) : new Hyperdrive(store.namespace(name), { encryptionKey })
     await drive.ready()
     const entry = drive.discoveryKey && { drive, discovery: swarm.join(drive.discoveryKey, { client: true, server: true }) }
     drives.set(z32.encode(drive.key), entry)
@@ -48,7 +52,7 @@ export async function createNode ({ storage = DEFAULT_STORAGE, bootstrap } = {})
   }
 
   return {
-    store, swarm, open,
+    storage, store, swarm, open,
     async close () {
       await swarm.destroy()
       await store.close()
@@ -68,8 +72,11 @@ async function* walk (dir, base = dir) {
  * Mirrors `dir` into the single-writer drive named `name`. The link stays the same across
  * republishes (same storage + name = same key); files removed from `dir` are removed from the site.
  */
-export async function publish (node, dir, { name = 'default' } = {}) {
-  const { drive, discovery } = await node.open(null, { name })
+export async function publish (node, dir, { name = 'default', private: isPrivate = false } = {}) {
+  // A site that was ever private stays private: its core is encrypted from the first block.
+  const known = (await loadSites(node.storage))[name]
+  const encryptionKey = known?.enc ? z32.decode(known.enc) : isPrivate ? crypto.randomBytes(32) : undefined
+  const { drive, discovery } = await node.open(null, { name, encryptionKey })
   const seen = new Set()
   for await (const rel of walk(dir)) {
     const file = '/' + rel
@@ -78,12 +85,14 @@ export async function publish (node, dir, { name = 'default' } = {}) {
   }
   for await (const { key } of drive.list('/')) if (!seen.has(key)) await drive.del(key)
   await discovery.flushed()
-  return { link: toLink(drive.key), files: seen.size }
+  await saveSite(node.storage, name, { key: z32.encode(drive.key), enc: encryptionKey && z32.encode(encryptionKey) })
+  return { link: toLink(drive.key, encryptionKey), files: seen.size }
 }
 
 /** Downloads a whole site and keeps seeding it. */
 export async function pin (node, link) {
-  const { drive, discovery } = await node.open(parseLink(link))
+  const { key, encryptionKey } = parseLink(link)
+  const { drive, discovery } = await node.open(key, { encryptionKey })
   await discovery.flushed()
   await node.swarm.flush()
   await drive.update({ wait: true })
@@ -112,9 +121,9 @@ export function createGateway (node, { port = DEFAULT_PORT, timeoutMs = 15000 } 
         if (!m[2]) { res.writeHead(301, { location: `/${label}/` }); return res.end() }
       }
 
-      let key
-      try { key = parseLink(label) } catch { return send(400, 'bad site key') }
-      const { drive, discovery } = await node.open(key)
+      const site = await resolveSite(node.storage, label)
+      if (!site) return send(400, 'unknown site: use a key or a name added with `linda-net add`')
+      const { drive, discovery } = await node.open(site.key, { encryptionKey: site.encryptionKey })
       // Let the DHT lookup finish and the first peers connect, then pull the latest version.
       await Promise.race([
         discovery.flushed().then(() => node.swarm.flush()).then(() => drive.update({ wait: true })),

@@ -4,16 +4,20 @@
   "description": "Publish and browse websites over Hyperswarm. A companion to Linda: no servers, no DNS.",
   "type": "module",
   "license": "ISC",
-  "bin": { "linda-net": "bin/linda-net.js" },
-  "engines": { "node": ">=20" },
-  "scripts": { "test": "node --test test/*.test.js" },
+  "bin": {
+    "linda-net": "bin/linda-net.js"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "dependencies": {
     "corestore": "^7.12.0",
+    "hyperdht": "^6.0.0",
     "hyperdrive": "^13.3.3",
     "hyperswarm": "^4.17.0",
     "z32": "^1.1.0"
-  },
-  "devDependencies": {
-    "hyperdht": "^6.0.0"
   }
 }
