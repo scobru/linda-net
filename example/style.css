@@ -1,0 +1,5 @@
+:root { color-scheme: light dark; }
+body { font: 18px/1.6 system-ui, sans-serif; margin: 0; display: grid; min-height: 100vh; place-items: center; }
+main { max-width: 36rem; padding: 1.5rem; }
+a { color: #2c6bed; }
+code { background: #8883; padding: .1em .3em; border-radius: 4px; }
