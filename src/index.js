@@ -75,6 +75,7 @@ async function* walk (dir, base = dir) {
 export async function publish (node, dir, { name = 'default', private: isPrivate = false } = {}) {
   // A site that was ever private stays private: its core is encrypted from the first block.
   const known = (await loadSites(node.storage))[name]
+  if (known && !known.enc && isPrivate) throw new Error(`site "${name}" is already public and can't become private: use another --name`)
   const encryptionKey = known?.enc ? z32.decode(known.enc) : isPrivate ? crypto.randomBytes(32) : undefined
   const { drive, discovery } = await node.open(null, { name, encryptionKey })
   const seen = new Set()
