@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>linda-net</title>
+<meta name="description" content="Publish a website from a folder, read it from a link. No server, no DNS, no hosting account.">
+<style>
+:root{--bg:#fafaf7;--fg:#1a1a1a;--mute:#666;--card:#fff;--line:#e3e3dc;--acc:#2d5bff;--code:#f0f0ea}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#999;--card:#1a1a1a;--line:#2a2a2a;--acc:#7da0ff;--code:#1e1e1e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:0 16px 64px}
+h1{font-size:clamp(2.2rem,7vw,3.4rem);line-height:1.1;margin:72px 0 16px}
+h2{margin:56px 0 12px}
+p.lead{font-size:1.25rem;color:var(--mute);margin:0 0 24px}
+a{color:var(--acc)}
+pre,code{font:14px/1.5 ui-monospace,monospace;background:var(--code);border-radius:6px}
+code{padding:2px 5px}
+pre{padding:14px 16px;overflow-x:auto}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card h3{margin:0 0 6px}
+.card pre{margin:12px 0 0}
+ul{padding-left:20px}
+footer{margin-top:64px;color:var(--mute);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<h1>Publish a folder.<br>Share a link.</h1>
+<p class="lead">No server, no DNS, no hosting account. Built on Hyperswarm and Hyperdrive.</p>
+<pre>npm install
+node bin/linda-net.js publish example
+# linda://1y9nut63…   (keeps seeding)</pre>
+
+<h2>Two ways to share</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Sites</h3>
+    <p>Copy a <strong>folder</strong> of static files into a Hyperdrive. Readers open it in a browser; it works even when the author is offline, as long as some peer hosts it.</p>
+    <pre>linda-net publish ./site
+linda-net serve
+# http://&lt;key&gt;.localhost:7777/</pre>
+  </div>
+  <div class="card">
+    <h3>Tunnels</h3>
+    <p>Share a <strong>live TCP port</strong> (HTTP, SSH, a database) with no public IP or port forwarding. Works while the exposing machine is online.</p>
+    <pre>linda-net expose 3000
+linda-net connect linda-tunnel://… --port 3000</pre>
+  </div>
+</div>
+
+<h2>Good to know</h2>
+<ul>
+  <li><strong>Private sites:</strong> <code>publish --private</code> encrypts the drive; the key is the part after <code>#</code>.</li>
+  <li><strong>Verified:</strong> every block is checked against the site's public key.</li>
+  <li><strong>Isolated:</strong> each site gets its own origin, so sites can't read each other's cookies.</li>
+  <li><strong>Not anonymous:</strong> peers you connect to can see your IP. Links and tunnel links are secrets: share with care.</li>
+  <li><code>publish</code> and <code>serve</code> on one machine need different <code>--storage</code> dirs.</li>
+</ul>
+
+<footer>
+<a href="https://github.com/scobru/linda-net">GitHub</a> · a companion to <a href="https://github.com/scobru/linda">Linda</a> · ISC license
+</footer>
+</main>
+</body>
+</html>

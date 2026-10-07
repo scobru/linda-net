@@ -42,6 +42,8 @@ Two processes cannot share one storage dir (`~/.linda-net` by default). Running 
 - `expose` / `connect` is a TCP tunnel (any protocol: HTTP, SSH...) over a HyperDHT connection, no public IP or port forwarding. The tunnel link is the secret: anyone holding it reaches the port.
 - Reading a site re-hosts it while the gateway runs; `pin` does it on purpose and downloads everything.
 
+The [`landing/`](landing) folder is a landing page: `linda-net publish landing` hosts it with linda-net itself.
+
 Try it with the [`example/`](example) folder: a small static page with a stylesheet, an image and a
 second page.
 
