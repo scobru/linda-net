@@ -7,6 +7,7 @@ import { exposePort, connectPort } from '../src/tunnel.js'
 const USAGE = `sites
   linda-net publish <dir> [--name site] [--private]   publish a folder, print its link, keep seeding
   linda-net serve [--port ${DEFAULT_PORT}]                      local gateway: http://<key|name>.localhost:${DEFAULT_PORT}/
+  linda-net open <link> [--port ${DEFAULT_PORT}]                 read a site: start the gateway and print its URL, one step
   linda-net pin <link>                                 download a site and keep seeding it
   linda-net add <link> --name <petname>                save a site (and its key, if private) under a short name
   linda-net list                                       sites known to this machine
@@ -23,7 +24,7 @@ const flag = (n) => { const i = argv.indexOf(`--${n}`); return i < 0 ? undefined
 const bool = (n) => { const i = argv.indexOf(`--${n}`); return i >= 0 && argv.splice(i, 1).length === 1 }
 const opts = { storage: flag('storage') ?? DEFAULT_STORAGE, name: flag('name'), port: flag('port'), bootstrap: flag('bootstrap'), private: bool('private') }
 const [cmd, arg] = argv
-const needsArg = ['publish', 'pin', 'add', 'expose', 'connect']
+const needsArg = ['publish', 'open', 'pin', 'add', 'expose', 'connect']
 if (![...needsArg, 'serve', 'list'].includes(cmd) || (needsArg.includes(cmd) && !arg)) { console.error(USAGE); process.exit(1) }
 
 if (cmd === 'list') {
@@ -57,6 +58,12 @@ if (cmd === 'publish') {
 } else if (cmd === 'connect') {
   const { port } = await connectPort(node, arg, { port: opts.port ? +opts.port : 0 })
   console.log(`localhost:${port} -> ${arg}`)
+} else if (cmd === 'open') {
+  const { key, encryptionKey } = parseLink(arg)
+  const id = z32.encode(key)
+  if (encryptionKey) await saveSite(opts.storage, id, { key: id, enc: z32.encode(encryptionKey) }) // gateway finds the key by label
+  const port = await createGateway(node, { port: opts.port ? +opts.port : DEFAULT_PORT }).listen()
+  console.log(`http://${id}.localhost:${port}/  (Ctrl+C to stop; reading also re-hosts the site)`)
 } else {
   const gw = createGateway(node, { port: opts.port ? +opts.port : DEFAULT_PORT })
   const port = await gw.listen()

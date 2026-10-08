@@ -1,13 +1,14 @@
 # linda-net
 
-Publish a website from a folder, read it from a link. No server, no DNS, no hosting account.
-A companion service to [Linda](https://github.com/scobru/linda), built on the same Holepunch
+Send a website the way you send a file: publish a folder, share a link, the site travels peer to peer.
+No server, no DNS, no hosting account. **It stays online only while some peer hosts it** (the author's
+terminal, or a machine running `pin`). A companion service to [Linda](https://github.com/scobru/linda), built on the same Holepunch
 stack (Hyperswarm, Hyperdrive, Corestore).
 
 ```
 linda-net publish example        # -> linda://<key>   (keeps seeding)
-linda-net serve                  # local gateway on http://localhost:7777
-# open http://<key>.localhost:7777/
+linda-net open linda://<key>     # reader: one step, prints http://<key>.localhost:7777/
+linda-net serve                  # or: a gateway for several sites (names, many links)
 linda-net pin linda://<key>      # host someone else's site too
 
 linda-net publish notes --private   # -> linda://<key>#<decryption key>
